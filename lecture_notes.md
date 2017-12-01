@@ -1556,3 +1556,77 @@ instance Monad Id where
     -- (>>=) :: m a -> (a -> m b) -> m b
     (Id x) >>= f = f x
 ```
+
+# 10.2 - 2017-12-01
+
+- Suppose we have the functions `(+ 1)` and `(* 2)`
+- We can turn them into functions of the type `Int -> m Int` as follows
+    - `(+ 1) :: Int -> Int`
+    - `return . (+ 1) :: Int -> m Int`
+
+- So as an example of the identity monad, we could write the following
+    - `prog :: Id Int`
+    - `prog = return 3 >>= return . (+ 1) >>= return . (* 2)`
+
+- Let's calculate the value
+    - `return 3 >>= return . (+ 1) >>= return . (* 2)`
+    - = { def `return` }
+    - `Id 3 >>= return . (+ 1) >>= return . (* 2)`
+    - = { def `(>>=)` }
+    - `(return . (+ 1)) 3 >>= return . (* 2)`
+    - = { def `(.)` }
+    - `return ((+ 1) 3) >>= return . (* 2)`
+    - = { def `(+ 1)` }
+    - `return 4 >>= return . (* 2)`
+    - = { def `return ` }
+    - `Id 4 >>= return . (* 2)`
+    - = { def `(>>=)` }
+    - `(return . (* 2)) 4`
+    - = { def `(.)` }
+    - `return ((* 2) 4)`
+    - = { def `(* 2)`}
+    - `return 8`
+    - = { def `return` }
+    - `Id 8`
+
+- This code is difficult to write
+- An alternative to using `>>=` to chain computations together is something
+  called do notation
+
+- In do-notation this is simply
+    - `prog = do x₁ <- return 3`
+    - `          x₂ <- (return . (+ 1)) x₁`
+    - `          x₃ <- (return . (+ 2)) x₂`
+    - `          return x₃`
+
+- The translation works by naming the result of computations as appropriate
+    - `return 3 >>= return . (+ 1) >>= return . (* 2)`
+
+- Whenever we have a function f, we can write
+    - `f = \x -> f x`
+
+- So we can rewrite the above as
+    - `return 3 >>= (\x₁ -> (return . (+ 1)) x₁) >>= (\x₂ -> (return . (* 2) x₂))`
+    - `                                          >>= (\x₃ -> return x₃)`
+        - We can insert this return because of the third monad law
+
+# Maybe Monad
+
+- The maybe monad captures the idea of computations that can fail
+- How do we model failure?
+
+- We can think of `fail` as a function/value
+
+```
+class Monad m => MonadFail m where
+    fail :: m a
+```
+
+- This says that to define a class called `MonadFail` for a type `m`, then `m`
+  must first be an instance of `Monad`
+- Also there must be an operation called `fail`
+
+- This must satisfy the following law
+    - `fail >>= f` = `fail` - bind-fail law
+
+- An example of a `MonadFail` is the `Maybe` type
