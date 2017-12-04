@@ -1630,3 +1630,127 @@ class Monad m => MonadFail m where
     - `fail >>= f` = `fail` - bind-fail law
 
 - An example of a `MonadFail` is the `Maybe` type
+
+# 11.0 - 2017-12-04
+
+- The `Maybe` type consists of two constructors
+    - `data Maybe a = Nothing | Just a`
+
+- We have already shown that this is a `Functor` in previous lectures
+- Here is the `Monad` instance
+
+```
+instance Monad Maybe where
+    -- return :: a -> Maybe a
+    return = Just
+    -- (>>=) :: Maybe a -> (a -> Maybe b) -> Maybe b
+    Nothing >>= f  = Nothing
+    (Just x) >>= f = f x
+```
+
+- Now for this to be a valid monad, we must check that the laws hold true
+
+1. Left-return: `return x >> f = f x`
+    - `return x >>= f`
+    - = { def `return` }
+    - `Just x >>= f`
+    - = { def (>>=) }
+    - `f x`
+2. Right-return: `m x >>= return = m x`
+    - We do 'case analysis' on the structure of `m x`
+    - Case `Nothing`
+        - `Nothing >>= return`
+        - = { def `(>>=)` }
+        - `Nothing`
+    - Case `Just`
+        - `Just x >>= return`
+        - = { def `(>>=)` }
+        - `return x`
+        - = { def `return` }
+        - `Just x`
+3. Associativity: `(m x >>= f) >>= g` = `m x >>= (\x -> f x >>= g)`
+    - Case `Nothing`
+        - `(Nothing >>= f) >>= g`
+        - = { def `(>>=)` }
+        - `Nothing >>= g`
+        - = { def `(>>=)` }
+        - `Nothing`
+        - RHS
+        - `Nothing >>= (\x -> f x >>= g)`
+        - = { def `(>>=)` }
+        - `Nothing`
+    - Case `Just`
+        - `((Just x) >>= f) >>= g`
+        - = { def `(>>=)` }
+        - `f x >>= g`
+        - RHS
+        - `(Just x) >>= (\x' -> f x' >>= g)`
+            - (The inner `x` is not the same as the outer one)
+        - = { def `(>>=)` }
+        - `(\x -> f x >>= g) x`
+        - { η-reduction (eta-reduction) }
+        - `f x >>= g`
+
+- We have now shown that `Maybe` is a `Monad`
+- Now we show that it is an instance of `MonadFail`
+
+```
+instance MonadFail Maybe where
+    -- fail :: Maybe a
+    fail = Nothing
+```
+
+- The bind-fail law is
+    - `fail >>= f = fail`
+    - = { def `fail` }
+    - `Nothing >>= f`
+    - = { def `(>>=)` }
+    - `Nothing`
+    - RHS
+    - = { def `fail` }
+    - `Nothing`
+
+- Consider the following program
+
+```
+prog :: Int -> Maybe Int
+prog x = do
+            y <- return (x - 2)
+            z <- safeDiv 3 y
+            u <- return (z + 4)
+            return u
+```
+
+- The definition of `safeDiv` is
+
+```
+safeDiv :: Int -> Int -> Maybe Int
+safeDiv x 0 = Nothing
+safeDiv x y = Just (div x y)
+```
+
+- To execute our program `prog`, we calculate
+
+- `prog 2`
+- = { def `prog` }
+- `return (2 - 2) >>= (\y -> safeDiv 3 y >>= (\z -> return (z + 4) >>= (\u ->
+  return u)))`
+- = { def `-` }
+- `return 0 >>= (\y -> safeDiv 3 y >>= (\z -> return (z + 4) >>= (\u ->
+  return u)))`
+- = { def `return` }
+- `(Just 0) >>= (\y -> safeDiv 3 y >>= (\z -> return (z + 4) >>= (\u ->
+  return u)))`
+- = { def `(>>=)` }
+- `(\y -> safeDiv 3 y >>= (\z -> return (z + 4) >>= (\u ->
+  return u))) 0`
+- = { eta-reduction }
+- `safeDiv 3 0 >>= (\z -> return (z + 4) >>= (\u -> return u))`
+- = { def `safeDiv` }
+- `Nothing >>= (\z -> return (z + 4) >>= (\u -> return u))`
+- = { def `(>>=)` }
+- `Nothing`
+
+- This was the desired output
+    - We have shown that a `Nothing` somewhere in the chain of binds makes the
+      whole computation fail
