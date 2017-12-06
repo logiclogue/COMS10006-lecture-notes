@@ -1754,3 +1754,109 @@ safeDiv x y = Just (div x y)
 - This was the desired output
     - We have shown that a `Nothing` somewhere in the chain of binds makes the
       whole computation fail
+
+# 11.1 - 2017-12-06
+
+# Choice
+
+- Now we study non-deterministic computation
+
+- To model choice, in a program, we introduce the `MonadAlt` class
+
+```
+class MonadAlt m => MonadAlt m where
+    (□) :: m a -> m a -> m a
+```
+
+- This must satify two laws:
+    - or-associative:  (p □ q) □ r = p □ (q □ r)
+    - or >>= distributivity: (p □ q) >>= f = (p >>= f) □ (q >>= f)
+
+- This is an interface that might be satisfied by a datatype, but we are really
+  interested in the interaction of choice with failure
+
+## Non-determinism
+
+- Choice and failure interacting together gives non-determinism
+
+```
+class (MonadFail m, MonadAlt m) => MonadNondet m where
+```
+
+- Curiously, this class adds no extra operations
+- Since it depends on `MonadFail` and `MonadAlt`
+    - Then we have access to `return`, `(>>=)`, `□`, and `fail`
+- We also impose an interaction between `□` and `fail`
+- Namly that `fail` is the unit of `□`, and so we form a monoid
+
+- Laws
+    - Right fail-unit: fail □ p = p
+    - Left fail-unit: p □ fail = p
+
+- Using interfaces as we have done, rather than implementations focuses on
+  describing how the operations interact, rather than how they work in the
+  concrete
+- The advantage of this is that we can change the concrete implementation later
+  on
+
+# Implementation
+
+- There are several different implementations of `MonadNondet` possible but
+  perhaps the most natural is lists
+- To show that this is the case, we have to show that lists are `Monad`s,
+  `MonadFail`, and `MonadAlt`
+
+```
+instance Monad [] where
+    -- return :: a -> [a]
+    return x = [x]
+
+    -- (>>=) :: [a] -> (a -> [b]) -> [b]
+    xs (>>=) f = (concat . map f) xs
+```
+
+- At this point we must prove the 3 monad laws **DO THIS**
+- This is a good exercise
+
+- A list is also a `MonadFail`
+
+```
+instance MonadFail [] where
+    -- fail :: [a]
+    fail = []
+```
+
+- We have to prove the fail-bind law
+    - `fail >>= f` = `fail`
+
+- `fail >>= f`
+- = { def `fail` }
+- `[] >>= f`
+- = { def `(>>=)` }
+- `(concat . map f) []`
+- = { def `.` }
+- `concat (map f [])`
+- = { def `map` }
+- `concat []`
+- = { def `concat` }
+- `[]`
+- = { def `fail` }
+- `fail`
+
+- Next we give the `MonadAlt` instance
+
+```
+instance MonadAlt [] where
+    (□) :: [a] -> [a] -> [a]
+    xs □ ys = xs ++ ys -- ie (□) == (++)
+```
+
+- Again we need to prove the `MonadAlt` laws
+- Finally we provide an instance for `MonadNondet`
+
+```
+instance MonadNondet [] where
+```
+
+- There are no operations, but we do have to prove that `fail □ q = q` and `p □
+  fail = p` and that is trivial
