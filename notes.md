@@ -1556,3 +1556,301 @@ instance Monad Id where
     -- (>>=) :: m a -> (a -> m b) -> m b
     (Id x) >>= f = f x
 ```
+
+- Suppose we have the functions `(+ 1)` and `(* 2)`
+- We can turn them into functions of the type `Int -> m Int` as follows
+    - `(+ 1) :: Int -> Int`
+    - `return . (+ 1) :: Int -> m Int`
+
+- So as an example of the identity monad, we could write the following
+    - `prog :: Id Int`
+    - `prog = return 3 >>= return . (+ 1) >>= return . (* 2)`
+
+- Let's calculate the value
+    - `return 3 >>= return . (+ 1) >>= return . (* 2)`
+    - = { def `return` }
+    - `Id 3 >>= return . (+ 1) >>= return . (* 2)`
+    - = { def `(>>=)` }
+    - `(return . (+ 1)) 3 >>= return . (* 2)`
+    - = { def `(.)` }
+    - `return ((+ 1) 3) >>= return . (* 2)`
+    - = { def `(+ 1)` }
+    - `return 4 >>= return . (* 2)`
+    - = { def `return ` }
+    - `Id 4 >>= return . (* 2)`
+    - = { def `(>>=)` }
+    - `(return . (* 2)) 4`
+    - = { def `(.)` }
+    - `return ((* 2) 4)`
+    - = { def `(* 2)`}
+    - `return 8`
+    - = { def `return` }
+    - `Id 8`
+
+- This code is difficult to write
+- An alternative to using `>>=` to chain computations together is something
+  called do notation
+
+- In do-notation this is simply
+    - `prog = do x₁ <- return 3`
+    - `          x₂ <- (return . (+ 1)) x₁`
+    - `          x₃ <- (return . (+ 2)) x₂`
+    - `          return x₃`
+
+- The translation works by naming the result of computations as appropriate
+    - `return 3 >>= return . (+ 1) >>= return . (* 2)`
+
+- Whenever we have a function f, we can write
+    - `f = \x -> f x`
+
+- So we can rewrite the above as
+    - `return 3 >>= (\x₁ -> (return . (+ 1)) x₁) >>= (\x₂ -> (return . (* 2) x₂))`
+    - `                                          >>= (\x₃ -> return x₃)`
+        - We can insert this return because of the third monad law
+
+## Maybe Monad
+
+- The maybe monad captures the idea of computations that can fail
+- How do we model failure?
+
+- We can think of `fail` as a function/value
+
+```
+class Monad m => MonadFail m where
+    fail :: m a
+```
+
+- This says that to define a class called `MonadFail` for a type `m`, then `m`
+  must first be an instance of `Monad`
+- Also there must be an operation called `fail`
+
+- This must satisfy the following law
+    - `fail >>= f` = `fail` - bind-fail law
+
+- An example of a `MonadFail` is the `Maybe` type
+
+- The `Maybe` type consists of two constructors
+    - `data Maybe a = Nothing | Just a`
+
+- We have already shown that this is a `Functor` in previous lectures
+- Here is the `Monad` instance
+
+```
+instance Monad Maybe where
+    -- return :: a -> Maybe a
+    return = Just
+    -- (>>=) :: Maybe a -> (a -> Maybe b) -> Maybe b
+    Nothing >>= f  = Nothing
+    (Just x) >>= f = f x
+```
+
+- Now for this to be a valid monad, we must check that the laws hold true
+
+1. Left-return: `return x >> f = f x`
+    - `return x >>= f`
+    - = { def `return` }
+    - `Just x >>= f`
+    - = { def (>>=) }
+    - `f x`
+2. Right-return: `m x >>= return = m x`
+    - We do 'case analysis' on the structure of `m x`
+    - Case `Nothing`
+        - `Nothing >>= return`
+        - = { def `(>>=)` }
+        - `Nothing`
+    - Case `Just`
+        - `Just x >>= return`
+        - = { def `(>>=)` }
+        - `return x`
+        - = { def `return` }
+        - `Just x`
+3. Associativity: `(m x >>= f) >>= g` = `m x >>= (\x -> f x >>= g)`
+    - Case `Nothing`
+        - `(Nothing >>= f) >>= g`
+        - = { def `(>>=)` }
+        - `Nothing >>= g`
+        - = { def `(>>=)` }
+        - `Nothing`
+        - RHS
+        - `Nothing >>= (\x -> f x >>= g)`
+        - = { def `(>>=)` }
+        - `Nothing`
+    - Case `Just`
+        - `((Just x) >>= f) >>= g`
+        - = { def `(>>=)` }
+        - `f x >>= g`
+        - RHS
+        - `(Just x) >>= (\x' -> f x' >>= g)`
+            - (The inner `x` is not the same as the outer one)
+        - = { def `(>>=)` }
+        - `(\x -> f x >>= g) x`
+        - { η-reduction (eta-reduction) }
+        - `f x >>= g`
+
+- We have now shown that `Maybe` is a `Monad`
+- Now we show that it is an instance of `MonadFail`
+
+```
+instance MonadFail Maybe where
+    -- fail :: Maybe a
+    fail = Nothing
+```
+
+- The bind-fail law is
+    - `fail >>= f = fail`
+    - = { def `fail` }
+    - `Nothing >>= f`
+    - = { def `(>>=)` }
+    - `Nothing`
+    - RHS
+    - = { def `fail` }
+    - `Nothing`
+
+- Consider the following program
+
+```
+prog :: Int -> Maybe Int
+prog x = do
+            y <- return (x - 2)
+            z <- safeDiv 3 y
+            u <- return (z + 4)
+            return u
+```
+
+- The definition of `safeDiv` is
+
+```
+safeDiv :: Int -> Int -> Maybe Int
+safeDiv x 0 = Nothing
+safeDiv x y = Just (div x y)
+```
+
+- To execute our program `prog`, we calculate
+
+- `prog 2`
+- = { def `prog` }
+- `return (2 - 2) >>= (\y -> safeDiv 3 y >>= (\z -> return (z + 4) >>= (\u ->
+  return u)))`
+- = { def `-` }
+- `return 0 >>= (\y -> safeDiv 3 y >>= (\z -> return (z + 4) >>= (\u ->
+  return u)))`
+- = { def `return` }
+- `(Just 0) >>= (\y -> safeDiv 3 y >>= (\z -> return (z + 4) >>= (\u ->
+  return u)))`
+- = { def `(>>=)` }
+- `(\y -> safeDiv 3 y >>= (\z -> return (z + 4) >>= (\u ->
+  return u))) 0`
+- = { eta-reduction }
+- `safeDiv 3 0 >>= (\z -> return (z + 4) >>= (\u -> return u))`
+- = { def `safeDiv` }
+- `Nothing >>= (\z -> return (z + 4) >>= (\u -> return u))`
+- = { def `(>>=)` }
+- `Nothing`
+
+- This was the desired output
+    - We have shown that a `Nothing` somewhere in the chain of binds makes the
+      whole computation fail
+
+# Choice
+
+- Now we study non-deterministic computation
+
+- To model choice, in a program, we introduce the `MonadAlt` class
+
+```
+class MonadAlt m => MonadAlt m where
+    (□) :: m a -> m a -> m a
+```
+
+- This must satify two laws:
+    - or-associative:  (p □ q) □ r = p □ (q □ r)
+    - or >>= distributivity: (p □ q) >>= f = (p >>= f) □ (q >>= f)
+
+- This is an interface that might be satisfied by a datatype, but we are really
+  interested in the interaction of choice with failure
+
+## Non-determinism
+
+- Choice and failure interacting together gives non-determinism
+
+```
+class (MonadFail m, MonadAlt m) => MonadNondet m where
+```
+
+- Curiously, this class adds no extra operations
+- Since it depends on `MonadFail` and `MonadAlt`
+    - Then we have access to `return`, `(>>=)`, `□`, and `fail`
+- We also impose an interaction between `□` and `fail`
+- Namly that `fail` is the unit of `□`, and so we form a monoid
+
+- Laws
+    - Right fail-unit: fail □ p = p
+    - Left fail-unit: p □ fail = p
+
+- Using interfaces as we have done, rather than implementations focuses on
+  describing how the operations interact, rather than how they work in the
+  concrete
+- The advantage of this is that we can change the concrete implementation later
+  on
+
+# Implementation
+
+- There are several different implementations of `MonadNondet` possible but
+  perhaps the most natural is lists
+- To show that this is the case, we have to show that lists are `Monad`s,
+  `MonadFail`, and `MonadAlt`
+
+```
+instance Monad [] where
+    -- return :: a -> [a]
+    return x = [x]
+
+    -- (>>=) :: [a] -> (a -> [b]) -> [b]
+    xs (>>=) f = (concat . map f) xs
+```
+
+- At this point we must prove the 3 monad laws **DO THIS**
+- This is a good exercise
+
+- A list is also a `MonadFail`
+
+```
+instance MonadFail [] where
+    -- fail :: [a]
+    fail = []
+```
+
+- We have to prove the fail-bind law
+    - `fail >>= f` = `fail`
+
+- `fail >>= f`
+- = { def `fail` }
+- `[] >>= f`
+- = { def `(>>=)` }
+- `(concat . map f) []`
+- = { def `.` }
+- `concat (map f [])`
+- = { def `map` }
+- `concat []`
+- = { def `concat` }
+- `[]`
+- = { def `fail` }
+- `fail`
+
+- Next we give the `MonadAlt` instance
+
+```
+instance MonadAlt [] where
+    (□) :: [a] -> [a] -> [a]
+    xs □ ys = xs ++ ys -- ie (□) == (++)
+```
+
+- Again we need to prove the `MonadAlt` laws
+- Finally we provide an instance for `MonadNondet`
+
+```
+instance MonadNondet [] where
+```
+
+- There are no operations, but we do have to prove that `fail □ q = q` and `p □
+  fail = p` and that is trivial
