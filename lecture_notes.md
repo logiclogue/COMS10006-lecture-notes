@@ -1860,3 +1860,91 @@ instance MonadNondet [] where
 
 - There are no operations, but we do have to prove that `fail □ q = q` and `p □
   fail = p` and that is trivial
+
+# 12.0 - 2017-12-11
+
+# Efficiency
+
+- What do we mean by efficiency of our code?
+- Consider the operation `(++)`
+
+```
+(++) :: [a] -> [a] -> [a]
+[] ++ ys     = ys
+(x:xs) ++ ys = x : (xs ++ ys)
+```
+
+- The running time of this is O(n) where n is a number of elements in the `xs`
+  when we do `xs ++ ys`
+- You can determine this by counting the number of times we pattern match before
+  the answer is produced
+
+- Now consider `reverse :: [a] -> [a]`
+
+```
+reverse :: [a] -> [a]
+reverse []     = []
+reverse (x:xs) = reverse xs ++ [x]
+```
+
+- Looking at this, given `reverse xs`, where `xs` has length n, we know the
+  pattern match in the non-empty case will take O(n) steps, and recurse with
+  `reverse` and a list of size n - 1
+- Counting the total steps we have 1 + 2 + ... + n = n (n - 1) / 2 = O(n²)
+
+- A better version must avoid the use of `(++)` since this is doing repeated
+  work
+- Here is a version using an accumulating parameter
+
+## Accumulating Parameters
+
+- An accumulating parameter is a parameter to a recursive function that
+  represents intermediate input that will become the output in the final call
+- For `reverse`, we will accumulate the reversed list
+
+```
+reverse :: [a] -> [a]
+reverse xs = reverse' xs [] where
+    reverse' :: [a] -> [a] -> [a]
+    reverse' [] ys     = ys
+    reverse' (x:xs) ys = reverse' xs (x:ys) -- This value ends up in the bottom of the list after everything in xs
+```
+
+- In this case, if we count the number of pattern matches on an input xs of size
+  n, we see that there are O(n) steps
+
+## Difference Lists
+
+- A difference list (or, sometimes called a cayley representation of a list) is
+  a representation of lists that makes the `(++)` operation cost O(1) rather
+  than O(n)
+
+- The reason `(++)` is expensive on repeated calls is that the left-hand
+  argument must be processed in its entirety to replace `[]` with `ys`
+- A difference list does not have `[]` as its last element, but rather it is a
+  parameter waiting to be instantiated
+
+- A difference list is of type `[a] -> [a]`
+
+- In other words, we represent a list as a function from lists to lists
+
+- The empty list is represented by a function
+- `\xs -> xs`
+- This is the identity list
+- To represent a list with one value, we do this
+- `\xs -> x : xs`
+
+- A list with multiple elements becomes a chain of functions
+- `(\xs -> 1 : xs) . (\ys -> 2 : ys) . (\zs -> 3 : zs)` - `[a] -> [a]`
+
+- What happens when we apply this function to `[]`?
+- Let's calculate
+- `((\xs -> 1 : xs) . (\ys -> 2 : ys) . (\zs -> 3 : zs))[]`
+- = { def `(.)` }
+- `(\xs -> 1 : xs) ((\ys -> 2 : ys) ((\zs -> 3 : zs)[]))`
+- = { applying function }
+- `(\xs -> 1 : xs) ((\ys -> 2 : ys) (3 : []))`
+- = { applying function }
+- `(\xs -> 1 : xs) (2 : 3 : [])`
+- = { applying function }
+- `1 : 2 : 3 : []`
