@@ -1213,7 +1213,7 @@ data Tree a = Fork (Tree a) (Tree a)
 
 ```
 foldTree :: (a -> b) -> (b -> b -> b) -> Tree a -> b
-foldTree leaf fork Leaf x = leaf x
+foldTree leaf fork (Leaf x) = leaf x
 foldTree leaf fork (Fork l r) =
     fork (foldTree leaf fork l) (foldTree leaf fork r)
 ```
