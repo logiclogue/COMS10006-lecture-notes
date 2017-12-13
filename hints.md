@@ -23,6 +23,8 @@
 - List comprehensions
 - Name clashes syntax
 - Case syntax
+- Lemma 1
+- Lemma 2
 
 # Evaluating by hand
 
