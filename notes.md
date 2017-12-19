@@ -1118,9 +1118,9 @@ elem x (y:ys)
 ```
 insert :: Ord a => a -> Bush a -> Bush a
 insert x Tip = Node Tip x Tip
-insert x (l y r)
+insert x (Node l y r)
     | x < y  = Node (insert x l) y r
-    | x <= y = Node l y (insert x r)
+    | x >= y = Node l y (insert x r)
 ```
 
 - Now that we know how to insert a single element into a sorted bush
@@ -1940,3 +1940,52 @@ reverse xs = reverse' xs [] where
 - `(\xs -> 1 : xs) (2 : 3 : [])`
 - = { applying function }
 - `1 : 2 : 3 : []`
+
+- We will capture the datatype `[a] -> [a]` in a new datatype of its own
+
+```
+newtype DList a = DList ([a] -> [a])
+```
+
+- Note that we name the constructor and the type the same thing as is common
+  practice for newtypes
+
+```
+fromDList :: DList a -> [a]
+fromDList (DList fxs) = fxs []
+```
+
+- Here `fxs` is a function that takes in a list and appends it to the end of a
+  list that has been constructed
+- So applying `[]` gives us a fully formed list
+
+```
+toDList :: [a] -> DList a
+toDList []     = DList id
+toDList (x:xs) = DList ((x:) . unDList (toDList xs))
+
+unDList :: DList a -> [a] -> [a]
+unDList (DList fxs) = fxs
+```
+
+- So we can trace back our rationale for the `MonadNondet`, and generalise the
+  notation of putting lists together
+
+- However, providing `MonadNondet` means providing `Monad` and therefore
+  `Functor` instances
+- This can be done, but only by transforming to lists using `fromDList`, working in
+  that domain and back with `toDList`
+
+- To keep things simple, we will provide the `Monoid` instance for `DList a`
+
+```
+instance Monoid (DList a) where
+    mempty                          = DList id
+    mappend (DList fxs) (DList fys) = DList (fxs . fys)
+```
+
+- `mappend` is the constant time `(++)`, for this instance
+
+- So while a `DList` has given us O(1) access to an `append` operation, it is
+  not without its disadvantages
+- We can no longer pattern match on the head of the list
