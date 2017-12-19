@@ -25,6 +25,7 @@
 - Case syntax
 - Lemma 1
 - Lemma 2
+- Kinds
 
 # Evaluating by hand
 
