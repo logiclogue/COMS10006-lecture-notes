@@ -78,10 +78,15 @@
 - `Tree`
 - `Bush`
 
+- `(,)`
+- `(->)`
+
 # Functor
 
 - 1 function
 - 2 laws
+- Covariant
+- Contravariant
 
 # Monoids
 
