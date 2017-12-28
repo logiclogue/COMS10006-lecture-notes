@@ -1,20 +1,20 @@
 # Lambda Caculus
 
 - 3 components
-- Variables
-- Lambda abstractions
-- Application
-
-# Functional Programming
-
-- PODs
-- Functions
+    - Variables
+    - Lambda abstractions
+    - Application
 - Evaluation
 - Lazy evaluation
 - Normal order
 - Eager evaluation
 - Applicative order
 - Church-rosser theorem
+
+# Functional Programming
+
+- PODs
+- Functions
 - Currying
 - Uncurrying
 - Inhabitants
