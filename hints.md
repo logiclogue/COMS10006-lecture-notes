@@ -26,6 +26,7 @@
 - Lemma 1
 - Lemma 2
 - Kinds
+- Infix type notation ::
 
 # Evaluating by hand
 
@@ -77,6 +78,7 @@
 - `Maybe`
 - `Tree`
 - `Bush`
+- `Either`
 
 - `(,)`
 - `(->)`
