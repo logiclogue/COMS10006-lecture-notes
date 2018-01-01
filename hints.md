@@ -58,6 +58,8 @@
 - `product`
 - `fmap`
 - `elem`
+- `fst`
+- `snd`
 
 # Typeclasses
 
@@ -132,6 +134,11 @@
 - `empty`
 - `lookup`
 - `insert`
+- `fromList`
+- `toList`
+- `(!)`
+
+- `Ord k`
 
 # Tries
 
