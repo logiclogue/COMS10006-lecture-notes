@@ -78,6 +78,7 @@
 
 - `Bool`
 - `Maybe`
+    - `fromMaybe`
 - `Tree`
 - `Bush`
 - `Either`
