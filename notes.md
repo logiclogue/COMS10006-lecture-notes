@@ -1403,7 +1403,7 @@ single x = Trie (Just x) M.empty
 ## Lookup
 
 ```
-lookup :: Ord => [k] -> Trie k v -> Maybe v
+lookup :: Ord k => [k] -> Trie k v -> Maybe v
 lookup [] (Trie mv kvs)     = mv
 lookup (k:ks) (Trie mv kvs) =
     case M.lookup k kvs of
