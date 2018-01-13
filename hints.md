@@ -69,6 +69,7 @@
 - `Num` class
 - `Show` class
 - `Monoid` class
+    - `crush`
 - `Functor` class
 
 # Data types
