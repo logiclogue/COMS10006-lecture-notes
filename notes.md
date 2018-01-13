@@ -1758,7 +1758,7 @@ safeDiv x y = Just (div x y)
 - To model choice, in a program, we introduce the `MonadAlt` class
 
 ```
-class MonadAlt m => MonadAlt m where
+class Monad m => MonadAlt m where
     (□) :: m a -> m a -> m a
 ```
 
@@ -1781,7 +1781,7 @@ class (MonadFail m, MonadAlt m) => MonadNondet m where
 - Since it depends on `MonadFail` and `MonadAlt`
     - Then we have access to `return`, `(>>=)`, `□`, and `fail`
 - We also impose an interaction between `□` and `fail`
-- Namly that `fail` is the unit of `□`, and so we form a monoid
+- Namely that `fail` is the unit of `□`, and so we form a monoid
 
 - Laws
     - Right fail-unit: fail □ p = p
