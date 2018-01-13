@@ -161,7 +161,7 @@
 - Reverse bind
 - Identity monad
 - Maybe monad
-- Fail monad
+- `MonadFail`
 - 1 monad fail function
 - 1 monad fail law
 - `MonadAlt`
