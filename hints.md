@@ -34,6 +34,7 @@
 - `⇔`
 - `⇒`
 - Induction
+- Eta-reduction
 
 # Functions
 
