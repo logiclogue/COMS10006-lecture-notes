@@ -23,6 +23,7 @@
 - List comprehensions
 - Name clashes syntax
 - Case syntax
+- Record syntax
 - Lemma 1
 - Lemma 2
 - Kinds
