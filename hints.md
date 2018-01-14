@@ -36,6 +36,10 @@
 - `⇒`
 - Induction
 - Eta-reduction
+- Eta-abstraction
+- Beta-reduction
+- Beta-abstraction
+- Alpha-conversion
 
 # Functions
 
