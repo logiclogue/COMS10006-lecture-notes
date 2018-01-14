@@ -1,4 +1,4 @@
-# Lambda Caculus
+# Lambda Calculus
 
 - 3 components
     - Variables
