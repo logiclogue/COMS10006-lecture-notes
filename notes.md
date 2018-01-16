@@ -1086,7 +1086,7 @@ instance Functor [] where
 ```
 instance Functor Tree where
     fmap f (Leaf x) = Leaf (f x)
-    fmap f (Node l r) = Node (fmap f l) (fmap f r)
+    fmap f (Fork l r) = Fork (fmap f l) (fmap f r)
 ```
 
 - Or, alternatively
